@@ -75,6 +75,6 @@ func main() {
 		r.Get("/api/userinfo", rest_api_handlers.UserInfo)
 	})
 
-	log.Println("Server starting on :8080")
-	http.ListenAndServe(":8080", r)
+	log.Println("Server starting on 0.0.0.0:8080")
+	http.ListenAndServe("0.0.0.0:8080", r)
 }

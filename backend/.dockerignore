@@ -1,0 +1,7 @@
+tmp/
+*.db
+.env
+.air.toml
+testdata/
+*_test.go
+*.log
