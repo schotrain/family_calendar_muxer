@@ -10,7 +10,13 @@
       "Bash(cat:*)",
       "Bash(/dev/null)",
       "Read(//tmp/**)",
-      "Bash(open db_coverage.html)"
+      "Bash(open db_coverage.html)",
+      "Bash(npx create-react-app:*)",
+      "Bash(npm install:*)",
+      "Bash(npm create:*)",
+      "Bash(npx create-rsbuild:*)",
+      "Bash(npx:*)",
+      "Bash(npm init:*)"
     ],
     "deny": [],
     "ask": []

@@ -27,6 +27,7 @@ func setupAuthTests() {
 	os.Setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
 	os.Setenv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback")
 	os.Setenv("USE_SECURE_CONNECTIONS", "false")
+	os.Setenv("ALLOWED_CALLBACKS", "http://localhost:3000/auth/callback")
 	InitAuthConfig()
 }
 
@@ -58,6 +59,48 @@ func TestLoginHandler(t *testing.T) {
 	assert.Equal(t, 300, stateCookie.MaxAge)
 	assert.True(t, stateCookie.HttpOnly)
 	assert.Equal(t, http.SameSiteLaxMode, stateCookie.SameSite)
+}
+
+func TestLoginHandler_WithValidCallback(t *testing.T) {
+	setupAuthTests()
+
+	req := httptest.NewRequest("GET", "/auth/google?callback=http://localhost:3000/auth/callback", nil)
+	rr := httptest.NewRecorder()
+
+	LoginHandler(rr, req)
+
+	// Should redirect to Google OAuth
+	assert.Equal(t, http.StatusTemporaryRedirect, rr.Code)
+	assert.Contains(t, rr.Header().Get("Location"), "accounts.google.com/o/oauth2")
+
+	// Should set both state and callback cookies
+	cookies := rr.Result().Cookies()
+	var stateCookie, callbackCookie *http.Cookie
+	for _, cookie := range cookies {
+		if cookie.Name == "oauth_state" {
+			stateCookie = cookie
+		}
+		if cookie.Name == "oauth_callback" {
+			callbackCookie = cookie
+		}
+	}
+	assert.NotNil(t, stateCookie)
+	assert.NotNil(t, callbackCookie)
+	assert.Equal(t, "http://localhost:3000/auth/callback", callbackCookie.Value)
+	assert.Equal(t, 300, callbackCookie.MaxAge)
+	assert.True(t, callbackCookie.HttpOnly)
+}
+
+func TestLoginHandler_WithInvalidCallback(t *testing.T) {
+	setupAuthTests()
+
+	req := httptest.NewRequest("GET", "/auth/google?callback=http://evil.com/steal", nil)
+	rr := httptest.NewRecorder()
+
+	LoginHandler(rr, req)
+
+	assert.Equal(t, http.StatusForbidden, rr.Code)
+	assert.Contains(t, rr.Body.String(), "callback URL is not allowed")
 }
 
 func TestCallbackHandler_MissingStateCookie(t *testing.T) {
@@ -534,4 +577,80 @@ func TestCallbackHandler_DatabaseError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 	assert.Contains(t, rr.Body.String(), "Failed to process user")
+}
+
+func TestCallbackHandler_WithCallbackRedirect(t *testing.T) {
+	setupAuthTests()
+
+	// Save original functions
+	originalExchange := exchangeToken
+	originalGetUserInfo := getUserInfo
+	originalFindOrCreate := services.FindOrCreateUser
+	defer func() {
+		exchangeToken = originalExchange
+		getUserInfo = originalGetUserInfo
+		services.FindOrCreateUser = originalFindOrCreate
+	}()
+
+	// Mock successful OAuth flow
+	exchangeToken = func(ctx context.Context, code string) (*oauth2.Token, error) {
+		return &oauth2.Token{AccessToken: "mock-access-token"}, nil
+	}
+
+	getUserInfo = func(ctx context.Context, token *oauth2.Token) (*GoogleUserInfo, error) {
+		return &GoogleUserInfo{
+			Sub:        "google-user-123",
+			Email:      "test@example.com",
+			GivenName:  "Test",
+			FamilyName: "User",
+		}, nil
+	}
+
+	services.FindOrCreateUser = func(provider, providerID, givenName, familyName, email string) (*models.User, error) {
+		user := &models.User{
+			GivenName:      givenName,
+			FamilyName:     familyName,
+			Email:          email,
+			AuthProvider:   provider,
+			AuthProviderID: providerID,
+		}
+		user.ID = 1
+		return user, nil
+	}
+
+	// Setup request with callback cookie
+	req := httptest.NewRequest("GET", "/auth/google/callback?state=test-state&code=test-code", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "oauth_state",
+		Value: "test-state",
+	})
+	req.AddCookie(&http.Cookie{
+		Name:  "oauth_callback",
+		Value: "http://localhost:3000/auth/callback",
+	})
+	rr := httptest.NewRecorder()
+
+	CallbackHandler(rr, req)
+
+	// Should redirect to callback URL with token
+	assert.Equal(t, http.StatusTemporaryRedirect, rr.Code)
+	location := rr.Header().Get("Location")
+	assert.Contains(t, location, "http://localhost:3000/auth/callback?token=")
+	assert.NotContains(t, location, "token=http") // Token shouldn't contain URL
+
+	// Should clear cookies
+	cookies := rr.Result().Cookies()
+	var stateCookie, callbackCookie *http.Cookie
+	for _, cookie := range cookies {
+		if cookie.Name == "oauth_state" {
+			stateCookie = cookie
+		}
+		if cookie.Name == "oauth_callback" {
+			callbackCookie = cookie
+		}
+	}
+	assert.NotNil(t, stateCookie)
+	assert.Equal(t, -1, stateCookie.MaxAge)
+	assert.NotNil(t, callbackCookie)
+	assert.Equal(t, -1, callbackCookie.MaxAge)
 }

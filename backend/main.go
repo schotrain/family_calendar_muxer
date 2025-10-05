@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"family-calendar-backend/auth"
 	"family-calendar-backend/db"
@@ -12,6 +13,24 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/joho/godotenv"
 )
+
+func corsMiddleware(allowedOrigin string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
 
 func main() {
 	// Load environment variables from .env file
@@ -31,10 +50,17 @@ func main() {
 
 	r := chi.NewRouter()
 
+	// Get CORS allowed origin from environment
+	corsOrigin := os.Getenv("CORS_ALLOWED_ORIGIN")
+	if corsOrigin == "" {
+		corsOrigin = "http://localhost:3000" // Default for development
+	}
+
 	// Middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
+	r.Use(corsMiddleware(corsOrigin))
 
 	// Auth routes (not part of REST API)
 	r.Get("/auth/google", auth.LoginHandler)

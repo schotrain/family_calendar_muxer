@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -14,6 +15,7 @@ var (
 	GoogleOAuthConfig    *oauth2.Config
 	JWTSecret            []byte
 	UseSecureConnections bool
+	AllowedCallbacks     []string
 )
 
 func InitAuthConfig() error {
@@ -46,6 +48,19 @@ func InitAuthConfig() error {
 	if err != nil {
 		log.Printf("Warning: Invalid USE_SECURE_CONNECTIONS value '%s', defaulting to true for security", useSecure)
 		UseSecureConnections = true
+	}
+
+	// Load allowed callback URLs from environment variable (optional)
+	// Comma-separated list of allowed frontend callback URLs
+	allowedCallbacksStr := os.Getenv("ALLOWED_CALLBACKS")
+	if allowedCallbacksStr != "" {
+		AllowedCallbacks = strings.Split(allowedCallbacksStr, ",")
+		// Trim whitespace from each callback URL
+		for i := range AllowedCallbacks {
+			AllowedCallbacks[i] = strings.TrimSpace(AllowedCallbacks[i])
+		}
+	} else {
+		AllowedCallbacks = []string{}
 	}
 
 	return nil

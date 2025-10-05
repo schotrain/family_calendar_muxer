@@ -14,12 +14,14 @@ func TestInitAuthConfig_WithValidEnv(t *testing.T) {
 	os.Setenv("GOOGLE_REDIRECT_URL", "http://localhost:8080/callback")
 	os.Setenv("JWT_SECRET", "test-jwt-secret")
 	os.Setenv("USE_SECURE_CONNECTIONS", "true")
+	os.Setenv("ALLOWED_CALLBACKS", "http://localhost:3000/auth/callback,http://localhost:3001/callback")
 	defer func() {
 		os.Unsetenv("GOOGLE_CLIENT_ID")
 		os.Unsetenv("GOOGLE_CLIENT_SECRET")
 		os.Unsetenv("GOOGLE_REDIRECT_URL")
 		os.Unsetenv("JWT_SECRET")
 		os.Unsetenv("USE_SECURE_CONNECTIONS")
+		os.Unsetenv("ALLOWED_CALLBACKS")
 	}()
 
 	err := InitAuthConfig()
@@ -34,6 +36,7 @@ func TestInitAuthConfig_WithValidEnv(t *testing.T) {
 
 	assert.Equal(t, []byte("test-jwt-secret"), JWTSecret)
 	assert.True(t, UseSecureConnections)
+	assert.Equal(t, []string{"http://localhost:3000/auth/callback", "http://localhost:3001/callback"}, AllowedCallbacks)
 }
 
 func TestInitAuthConfig_DefaultSecureConnections(t *testing.T) {

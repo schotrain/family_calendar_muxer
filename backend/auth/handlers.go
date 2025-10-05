@@ -51,10 +51,29 @@ var (
 
 // LoginHandler initiates the OAuth flow
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	// Get callback URL from query parameter (optional)
+	callback := r.URL.Query().Get("callback")
+
+	// If callback is provided, validate it
+	if callback != "" {
+		// Check if callback URL is in the allowed list
+		allowed := false
+		for _, allowedCallback := range AllowedCallbacks {
+			if callback == allowedCallback {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			http.Error(w, "callback URL is not allowed", http.StatusForbidden)
+			return
+		}
+	}
+
 	// Generate random state
 	state := generateStateToken()
 
-	// Store state in session/cookie (simplified for now)
+	// Store state in cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "oauth_state",
 		Value:    state,
@@ -63,6 +82,18 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   UseSecureConnections,
 		SameSite: http.SameSiteLaxMode,
 	})
+
+	// If callback URL is provided, store it in a cookie
+	if callback != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "oauth_callback",
+			Value:    callback,
+			MaxAge:   300, // 5 minutes
+			HttpOnly: true,
+			Secure:   UseSecureConnections,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 
 	// Redirect to Google's OAuth consent page
 	url := GoogleOAuthConfig.AuthCodeURL(state)
@@ -81,6 +112,13 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("state") != stateCookie.Value {
 		http.Error(w, "Invalid state parameter", http.StatusBadRequest)
 		return
+	}
+
+	// Check if callback URL was provided (optional)
+	callbackCookie, _ := r.Cookie("oauth_callback")
+	var callbackURL string
+	if callbackCookie != nil {
+		callbackURL = callbackCookie.Value
 	}
 
 	// Exchange authorization code for token
@@ -116,8 +154,33 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Render HTML page with token
-	renderTokenPage(w, jwtToken, *userInfo)
+	// Clear auth cookies
+	http.SetCookie(w, &http.Cookie{
+		Name:     "oauth_state",
+		Value:    "",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   UseSecureConnections,
+		SameSite: http.SameSiteLaxMode,
+	})
+	if callbackURL != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     "oauth_callback",
+			Value:    "",
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   UseSecureConnections,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
+
+	// If callback URL is provided, redirect with token; otherwise render template
+	if callbackURL != "" {
+		redirectURL := callbackURL + "?token=" + jwtToken
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
+	} else {
+		renderTokenPage(w, jwtToken, *userInfo)
+	}
 }
 
 func renderTokenPage(w http.ResponseWriter, token string, userInfo GoogleUserInfo) {
