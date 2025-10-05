@@ -1,8 +1,6 @@
 package db
 
 import (
-	"log"
-
 	"family-calendar-backend/db/models"
 
 	"gorm.io/driver/sqlite"
@@ -11,18 +9,29 @@ import (
 
 var DB *gorm.DB
 
-func InitDB() {
+// migrateFunc allows mocking AutoMigrate in tests
+var migrateFunc = func(db *gorm.DB) error {
+	return db.AutoMigrate(&models.User{})
+}
+
+func InitDB(dbPath ...string) error {
+	// Use provided path or default to "family_calendar.db"
+	path := "family_calendar.db"
+	if len(dbPath) > 0 && dbPath[0] != "" {
+		path = dbPath[0]
+	}
+
 	var err error
-	DB, err = gorm.Open(sqlite.Open("family_calendar.db"), &gorm.Config{})
+	DB, err = gorm.Open(sqlite.Open(path), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		return err
 	}
 
 	// Run migrations
-	err = DB.AutoMigrate(&models.User{})
+	err = migrateFunc(DB)
 	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
+		return err
 	}
 
-	log.Println("Database initialized successfully")
+	return nil
 }

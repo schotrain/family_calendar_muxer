@@ -5,8 +5,14 @@ import (
 	"family-calendar-backend/db/models"
 )
 
-// FindOrCreateUser finds an existing user or creates a new one based on OAuth provider info
-func FindOrCreateUser(authProvider, authProviderID, givenName, familyName, email string) (*models.User, error) {
+// FindOrCreateUserFunc is a function type for finding or creating users
+type FindOrCreateUserFunc func(authProvider, authProviderID, givenName, familyName, email string) (*models.User, error)
+
+// FindOrCreateUser is the default implementation, but can be replaced in tests
+var FindOrCreateUser FindOrCreateUserFunc = findOrCreateUser
+
+// findOrCreateUser is the actual implementation
+func findOrCreateUser(authProvider, authProviderID, givenName, familyName, email string) (*models.User, error) {
 	var user models.User
 
 	// Try to find existing user by auth provider and provider ID

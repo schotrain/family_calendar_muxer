@@ -20,10 +20,14 @@ func main() {
 	}
 
 	// Initialize authentication
-	auth.InitAuthConfig()
+	if err := auth.InitAuthConfig(); err != nil {
+		log.Fatalf("Failed to initialize authentication: %v", err)
+	}
 
 	// Initialize database
-	db.InitDB()
+	if err := db.InitDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 
 	r := chi.NewRouter()
 

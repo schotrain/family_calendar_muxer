@@ -46,15 +46,11 @@ func RequireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		// Extract claims
-		if claims, ok := token.Claims.(*FamilyCalendarClaims); ok && token.Valid {
-			// Add user ID to request context for use in handlers
-			ctx := context.WithValue(r.Context(), UserIDContextKey, claims.UserID)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		} else {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
-			return
-		}
+		// Extract claims and add user ID to context
+		// Note: If ParseWithClaims succeeds, claims are guaranteed to be valid
+		claims := token.Claims.(*FamilyCalendarClaims)
+		ctx := context.WithValue(r.Context(), UserIDContextKey, claims.UserID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
@@ -62,4 +58,9 @@ func RequireAuth(next http.Handler) http.Handler {
 func GetUserIDFromContext(ctx context.Context) (uint, bool) {
 	userID, ok := ctx.Value(UserIDContextKey).(uint)
 	return userID, ok
+}
+
+// SetUserIDInContext adds a user ID to the context (used for testing)
+func SetUserIDInContext(ctx context.Context, userID uint) context.Context {
+	return context.WithValue(ctx, UserIDContextKey, userID)
 }

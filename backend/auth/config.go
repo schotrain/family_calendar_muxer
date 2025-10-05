@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"log"
 	"os"
 	"strconv"
@@ -10,12 +11,12 @@ import (
 )
 
 var (
-	GoogleOAuthConfig *oauth2.Config
-	JWTSecret         []byte
+	GoogleOAuthConfig    *oauth2.Config
+	JWTSecret            []byte
 	UseSecureConnections bool
 )
 
-func InitAuthConfig() {
+func InitAuthConfig() error {
 	GoogleOAuthConfig = &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
@@ -30,7 +31,7 @@ func InitAuthConfig() {
 	// JWT secret key - MUST be set via environment variable
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		log.Fatal("JWT_SECRET environment variable is required but not set")
+		return errors.New("JWT_SECRET environment variable is required but not set")
 	}
 	JWTSecret = []byte(secret)
 
@@ -40,5 +41,12 @@ func InitAuthConfig() {
 	if useSecure == "" {
 		useSecure = "true"
 	}
-	UseSecureConnections, _ = strconv.ParseBool(useSecure)
+	var err error
+	UseSecureConnections, err = strconv.ParseBool(useSecure)
+	if err != nil {
+		log.Printf("Warning: Invalid USE_SECURE_CONNECTIONS value '%s', defaulting to true for security", useSecure)
+		UseSecureConnections = true
+	}
+
+	return nil
 }

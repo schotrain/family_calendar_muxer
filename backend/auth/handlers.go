@@ -10,6 +10,8 @@ import (
 	"net/http"
 
 	"family-calendar-backend/db/services"
+
+	"golang.org/x/oauth2"
 )
 
 // GoogleUserInfo represents the user information from Google
@@ -22,6 +24,30 @@ type GoogleUserInfo struct {
 	Picture       string `json:"picture"`
 	VerifiedEmail bool   `json:"verified_email"`
 }
+
+// OAuth function variables for testing.
+// NOTE: The default implementations below make actual network calls to Google's OAuth API
+// and are intentionally NOT covered by unit tests. They are mocked in all tests to avoid
+// network dependencies. These functions are only used in production.
+var (
+	exchangeToken = func(ctx context.Context, code string) (*oauth2.Token, error) {
+		return GoogleOAuthConfig.Exchange(ctx, code)
+	}
+	getUserInfo = func(ctx context.Context, token *oauth2.Token) (*GoogleUserInfo, error) {
+		client := GoogleOAuthConfig.Client(ctx, token)
+		resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		var userInfo GoogleUserInfo
+		if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
+			return nil, err
+		}
+		return &userInfo, nil
+	}
+)
 
 // LoginHandler initiates the OAuth flow
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +85,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Exchange authorization code for token
 	code := r.URL.Query().Get("code")
-	token, err := GoogleOAuthConfig.Exchange(context.Background(), code)
+	token, err := exchangeToken(context.Background(), code)
 	if err != nil {
 		log.Printf("Failed to exchange token: %v", err)
 		http.Error(w, "Failed to exchange token", http.StatusInternalServerError)
@@ -67,19 +93,10 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get user info from Google
-	client := GoogleOAuthConfig.Client(context.Background(), token)
-	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	userInfo, err := getUserInfo(context.Background(), token)
 	if err != nil {
 		log.Printf("Failed to get user info: %v", err)
 		http.Error(w, "Failed to get user info", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	var userInfo GoogleUserInfo
-	if err := json.NewDecoder(resp.Body).Decode(&userInfo); err != nil {
-		log.Printf("Failed to decode user info: %v", err)
-		http.Error(w, "Failed to decode user info", http.StatusInternalServerError)
 		return
 	}
 
@@ -100,7 +117,7 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Render HTML page with token
-	renderTokenPage(w, jwtToken, userInfo)
+	renderTokenPage(w, jwtToken, *userInfo)
 }
 
 func renderTokenPage(w http.ResponseWriter, token string, userInfo GoogleUserInfo) {
