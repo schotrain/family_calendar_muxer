@@ -7,17 +7,13 @@ import (
 )
 
 type FamilyCalendarClaims struct {
-	Email      string `json:"email"`
-	GivenName  string `json:"given_name"`
-	FamilyName string `json:"family_name"`
+	UserID uint `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
-func GenerateFamilyCalendarJWT(email, givenName, familyName string) (string, error) {
+func GenerateFamilyCalendarJWT(userID uint) (string, error) {
 	claims := FamilyCalendarClaims{
-		Email:      email,
-		GivenName:  givenName,
-		FamilyName: familyName,
+		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

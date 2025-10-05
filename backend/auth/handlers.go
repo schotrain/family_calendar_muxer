@@ -8,10 +8,13 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+
+	"family-calendar-backend/db/services"
 )
 
 // GoogleUserInfo represents the user information from Google
 type GoogleUserInfo struct {
+	Sub           string `json:"sub"` // Unique Google user ID
 	Email         string `json:"email"`
 	Name          string `json:"name"`
 	GivenName     string `json:"given_name"`
@@ -80,8 +83,16 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate JWT token
-	jwtToken, err := GenerateFamilyCalendarJWT(userInfo.Email, userInfo.GivenName, userInfo.FamilyName)
+	// Find or create user in database
+	user, err := services.FindOrCreateUser("google", userInfo.Sub, userInfo.GivenName, userInfo.FamilyName, userInfo.Email)
+	if err != nil {
+		log.Printf("Failed to find or create user: %v", err)
+		http.Error(w, "Failed to process user", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate JWT token with only user ID
+	jwtToken, err := GenerateFamilyCalendarJWT(user.ID)
 	if err != nil {
 		log.Printf("Failed to generate JWT: %v", err)
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
@@ -93,98 +104,10 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderTokenPage(w http.ResponseWriter, token string, userInfo GoogleUserInfo) {
-	tmpl := `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Authentication Successful</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-        }
-        .user-info {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-        }
-        .token-container {
-            margin: 20px 0;
-        }
-        .token {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            word-wrap: break-word;
-            font-family: monospace;
-            font-size: 12px;
-            border: 1px solid #dee2e6;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .success {
-            color: #28a745;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1 class="success">✓ Authentication Successful</h1>
-
-        <div class="user-info">
-            <h3>Welcome, {{.GivenName}} {{.FamilyName}}!</h3>
-            <p><strong>Email:</strong> {{.Email}}</p>
-        </div>
-
-        <div class="token-container">
-            <h3>Your Family Calendar JWT Token:</h3>
-            <div class="token" id="token">{{.Token}}</div>
-            <button onclick="copyToken()">Copy Token</button>
-        </div>
-
-        <p><small>This token is valid for 24 hours. Keep it secure and do not share it.</small></p>
-    </div>
-
-    <script>
-        function copyToken() {
-            const token = document.getElementById('token').textContent;
-            navigator.clipboard.writeText(token).then(() => {
-                alert('Token copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-            });
-        }
-    </script>
-</body>
-</html>
-`
-
-	t, err := template.New("token").Parse(tmpl)
+	t, err := template.ParseFiles("auth/templates/auth_success.html")
 	if err != nil {
-		http.Error(w, "Failed to parse template", http.StatusInternalServerError)
+		log.Printf("Failed to parse template: %v", err)
+		http.Error(w, "Failed to load template", http.StatusInternalServerError)
 		return
 	}
 

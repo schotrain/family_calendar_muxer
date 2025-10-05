@@ -1,9 +1,9 @@
-package database
+package db
 
 import (
 	"log"
 
-	"family-calendar-backend/db_models"
+	"family-calendar-backend/db/models"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -19,7 +19,7 @@ func InitDB() {
 	}
 
 	// Run migrations
-	err = DB.AutoMigrate(&db_models.User{})
+	err = DB.AutoMigrate(&models.User{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}

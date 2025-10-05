@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log"
 	"os"
 	"strconv"
 
@@ -26,17 +27,18 @@ func InitAuthConfig() {
 		Endpoint: google.Endpoint,
 	}
 
-	// JWT secret key - should be set via environment variable
+	// JWT secret key - MUST be set via environment variable
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "your-secret-key-change-this-in-production"
+		log.Fatal("JWT_SECRET environment variable is required but not set")
 	}
 	JWTSecret = []byte(secret)
 
 	// Determine if we should use secure connections (HTTPS/SSL)
+	// Defaults to true for security - explicitly set to false for local development
 	useSecure := os.Getenv("USE_SECURE_CONNECTIONS")
 	if useSecure == "" {
-		useSecure = "false" // Default to false for local development
+		useSecure = "true"
 	}
 	UseSecureConnections, _ = strconv.ParseBool(useSecure)
 }

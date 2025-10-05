@@ -37,7 +37,7 @@ Edit `backend/.env` with your Google OAuth credentials:
 ```env
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URL=http://localhost:8080/auth/callback
+GOOGLE_REDIRECT_URL=http://localhost:8080/auth/google/callback
 JWT_SECRET=your-secret-key-change-this-in-production
 USE_SECURE_CONNECTIONS=false  # Set to true in production with HTTPS
 ```
@@ -61,25 +61,37 @@ The server will start on `http://localhost:8080`
 
 ### Google OAuth Login
 
-Visit `http://localhost:8080/auth` to initiate the Google OAuth flow:
+Visit `http://localhost:8080/auth/google` to initiate the Google OAuth flow:
 
 1. User is redirected to Google's consent page
-2. After approval, Google redirects back to `/auth/callback`
-3. Backend generates a Family Calendar JWT token
-4. Token is displayed on a styled HTML page with copy functionality
+2. After approval, Google redirects back to `/auth/google/callback`
+3. Backend creates/updates user in database
+4. Backend generates a Family Calendar JWT token
+5. Token is displayed on a styled HTML page with copy functionality
 
 The JWT token includes:
+- **User ID** (local database ID)
 - Email address
 - Given name and family name
 - 24-hour expiration
 
 ## API Endpoints
 
-### Health Check
+All API endpoints (except `/health`) require authentication via Bearer token.
+
+### Authentication
+
+Include the JWT token in the `Authorization` header:
+
+```bash
+Authorization: Bearer <your_jwt_token>
+```
+
+### Health Check (Public)
 
 **GET** `/health`
 
-Returns the health status of the server.
+Returns the health status of the server. No authentication required.
 
 ```bash
 curl http://localhost:8080/health
@@ -92,58 +104,37 @@ curl http://localhost:8080/health
 }
 ```
 
-### Create User
+### Get User Info (Protected)
 
-**POST** `/api/users`
+**GET** `/api/userinfo`
 
-Creates a new user with validation.
+Returns the authenticated user's information based on their JWT token.
 
-**Validation Rules:**
-- `name`: required, 2-100 characters
-- `email`: required, valid email format
-- `age`: required, 1-150
+**Authentication Required:** Yes
 
 ```bash
-curl -X POST http://localhost:8080/api/users \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "age": 30
-  }'
-```
-
-**Success Response (201):**
-```json
-{
-  "id": 1,
-  "name": "John Doe",
-  "email": "john@example.com",
-  "age": 30
-}
-```
-
-### Get User
-
-**GET** `/api/users/{id}`
-
-Retrieves a user by their ID from the database.
-
-```bash
-curl http://localhost:8080/api/users/1
+curl -H "Authorization: Bearer <your_jwt_token>" \
+  http://localhost:8080/api/userinfo
 ```
 
 **Success Response (200):**
 ```json
 {
   "id": 1,
-  "name": "John Doe",
-  "email": "john@example.com",
-  "age": 30
+  "given_name": "John",
+  "family_name": "Doe",
+  "email": "john@example.com"
 }
 ```
 
-**Error Response (404):**
+**Error Response (401 Unauthorized):**
+```json
+{
+  "error": "Authorization header required"
+}
+```
+
+**Error Response (404 Not Found):**
 ```json
 {
   "error": "User not found"
@@ -159,17 +150,22 @@ family_calendar_muxer/
 │   ├── auth/
 │   │   ├── config.go                    # OAuth and JWT configuration
 │   │   ├── jwt.go                       # JWT token generation
-│   │   └── handlers.go                  # Auth handlers and HTML templates
+│   │   ├── middleware.go                # JWT validation middleware
+│   │   ├── handlers.go                  # Auth handlers
+│   │   └── templates/
+│   │       └── auth_success.html        # Success page template
 │   ├── rest_api_handlers/
 │   │   ├── health_handler.go            # Health check endpoint
-│   │   ├── user_handler.go              # User CRUD endpoints
-│   │   ├── user_handler_schema.go       # Request/response schemas
+│   │   ├── user_handler.go              # User info endpoint
+│   │   ├── user_handler_schema.go       # Response schemas
 │   │   └── utils/
 │   │       └── response.go              # JSON response helpers
-│   ├── db_models/
-│   │   └── user.go                      # User database model
-│   ├── database/
-│   │   └── database.go                  # DB connection and migrations
+│   ├── db/
+│   │   ├── database.go                  # DB connection and migrations
+│   │   ├── models/
+│   │   │   └── user.go                  # User database model
+│   │   └── services/
+│   │       └── user_service.go          # User data access
 │   ├── go.mod                           # Go dependencies
 │   └── .env.example                     # Environment variables template
 ├── .gitignore
@@ -196,7 +192,7 @@ The application uses SQLite for data persistence. The database file `family_cale
 2. Create a new project or select existing
 3. Enable Google+ API
 4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:8080/auth/callback`
+5. Add authorized redirect URI: `http://localhost:8080/auth/google/callback`
 6. Copy Client ID and Client Secret to `.env` file
 
 ## License
