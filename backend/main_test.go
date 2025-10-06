@@ -118,9 +118,6 @@ func TestSetupRouter_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, router)
-
-	// Clean up database
-	// Note: In a real test you might want to close the database connection
 }
 
 func TestSetupRouter_WithCorsOrigin(t *testing.T) {

@@ -15,10 +15,7 @@ func TestInitDB_Success(t *testing.T) {
 	os.Setenv("DB_TYPE", "sqlite")
 	defer os.Unsetenv("DB_TYPE")
 
-	testDB := "test_family_calendar.db"
-	defer os.Remove(testDB)
-
-	err := InitDB(testDB)
+	err := InitDB()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, DB)
@@ -39,10 +36,7 @@ func TestInitDB_Migration(t *testing.T) {
 	os.Setenv("DB_TYPE", "sqlite")
 	defer os.Unsetenv("DB_TYPE")
 
-	testDB := "test_migration.db"
-	defer os.Remove(testDB)
-
-	err := InitDB(testDB)
+	err := InitDB()
 	assert.NoError(t, err)
 	assert.NotNil(t, DB)
 
@@ -72,44 +66,12 @@ func TestInitDB_DBGlobalVariable(t *testing.T) {
 	os.Setenv("DB_TYPE", "sqlite")
 	defer os.Unsetenv("DB_TYPE")
 
-	testDB := "test_global.db"
-	defer os.Remove(testDB)
-
 	DB = nil
 
-	err := InitDB(testDB)
+	err := InitDB()
 	assert.NoError(t, err)
 	assert.NotNil(t, DB)
 	assert.IsType(t, &gorm.DB{}, DB)
-
-	// Clean up
-	sqlDB, err := DB.DB()
-	assert.NoError(t, err)
-	sqlDB.Close()
-}
-
-func TestInitDB_InvalidDatabasePath(t *testing.T) {
-	// Ensure we use SQLite for testing
-	os.Setenv("DB_TYPE", "sqlite")
-	defer os.Unsetenv("DB_TYPE")
-
-	err := InitDB("/nonexistent/directory/that/does/not/exist/test.db")
-
-	assert.Error(t, err)
-}
-
-func TestInitDB_CustomPath(t *testing.T) {
-	// Ensure we use SQLite for testing
-	os.Setenv("DB_TYPE", "sqlite")
-	defer os.Unsetenv("DB_TYPE")
-
-	customPath := "test_custom.db"
-	defer os.Remove(customPath)
-
-	err := InitDB(customPath)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, DB)
 
 	// Clean up
 	sqlDB, err := DB.DB()
@@ -131,10 +93,7 @@ func TestInitDB_MigrationError(t *testing.T) {
 		return assert.AnError
 	}
 
-	migrationTestDB := "test_migration_error.db"
-	defer os.Remove(migrationTestDB)
-
-	err := InitDB(migrationTestDB)
+	err := InitDB()
 
 	assert.Error(t, err)
 	assert.Equal(t, assert.AnError, err)
@@ -155,10 +114,7 @@ func TestInitDB_DefaultsToSQLite(t *testing.T) {
 	// Clear DB_TYPE to test default behavior
 	os.Unsetenv("DB_TYPE")
 
-	testDB := "test_default.db"
-	defer os.Remove(testDB)
-
-	err := InitDB(testDB)
+	err := InitDB()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, DB)
@@ -169,20 +125,19 @@ func TestInitDB_DefaultsToSQLite(t *testing.T) {
 	sqlDB.Close()
 }
 
-func TestInitDB_SQLiteDefaultPath(t *testing.T) {
-	// Test SQLite with no path provided (uses default)
+func TestInitDB_SQLiteInMemoryDuringTests(t *testing.T) {
+	// Test that SQLite uses in-memory database during tests (no path provided)
 	os.Setenv("DB_TYPE", "sqlite")
 	defer os.Unsetenv("DB_TYPE")
-	defer os.Remove("family_calendar.db")
 
 	err := InitDB()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, DB)
 
-	// Verify the default database file was created
+	// Verify no database file was created (using :memory:)
 	_, err = os.Stat("family_calendar.db")
-	assert.NoError(t, err)
+	assert.True(t, os.IsNotExist(err), "Database file should not exist during tests")
 
 	// Clean up
 	sqlDB, err := DB.DB()
@@ -190,21 +145,43 @@ func TestInitDB_SQLiteDefaultPath(t *testing.T) {
 	sqlDB.Close()
 }
 
-func TestInitDB_SQLiteEmptyPath(t *testing.T) {
-	// Test SQLite with empty string path (uses default)
+func TestInitDB_SQLiteUsesMemoryInTests(t *testing.T) {
+	// Test that SQLite uses in-memory database during tests
 	os.Setenv("DB_TYPE", "sqlite")
 	defer os.Unsetenv("DB_TYPE")
-	defer os.Remove("family_calendar.db")
 
-	err := InitDB("")
+	err := InitDB()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, DB)
+
+	// Verify no database file was created (using :memory:)
+	_, err = os.Stat("family_calendar.db")
+	assert.True(t, os.IsNotExist(err), "Database file should not exist during tests")
 
 	// Clean up
 	sqlDB, err := DB.DB()
 	assert.NoError(t, err)
 	sqlDB.Close()
+}
+
+func TestGetSQLitePath_InTestMode(t *testing.T) {
+	// During tests, flag.Lookup("test.v") != nil
+	path := getSQLitePath()
+	assert.Equal(t, ":memory:", path)
+}
+
+func TestGetSQLitePath_InProductionMode(t *testing.T) {
+	// Mock getSQLitePath to test production behavior
+	originalGetSQLitePath := getSQLitePath
+	defer func() { getSQLitePath = originalGetSQLitePath }()
+
+	getSQLitePath = func() string {
+		return "family_calendar.db"
+	}
+
+	path := getSQLitePath()
+	assert.Equal(t, "family_calendar.db", path)
 }
 
 func TestInitDB_PostgresWithDatabaseURL(t *testing.T) {

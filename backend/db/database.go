@@ -2,6 +2,7 @@ package db
 
 import (
 	"family-calendar-backend/db/models"
+	"flag"
 	"fmt"
 	"os"
 
@@ -17,7 +18,18 @@ var migrateFunc = func(db *gorm.DB) error {
 	return db.AutoMigrate(&models.User{})
 }
 
-func InitDB(dbPath ...string) error {
+// getSQLitePath returns the appropriate SQLite database path
+// based on whether we're running tests or in production
+var getSQLitePath = func() string {
+	if flag.Lookup("test.v") != nil {
+		// Running tests - use in-memory database
+		return ":memory:"
+	}
+	// Production - use default file
+	return "family_calendar.db"
+}
+
+func InitDB() error {
 	dbType := os.Getenv("DB_TYPE")
 	if dbType == "" {
 		dbType = "sqlite" // Default to SQLite
@@ -62,12 +74,7 @@ func InitDB(dbPath ...string) error {
 		dialector = postgres.Open(dsn)
 
 	case "sqlite":
-		// Use provided path or default to "family_calendar.db"
-		path := "family_calendar.db"
-		if len(dbPath) > 0 && dbPath[0] != "" {
-			path = dbPath[0]
-		}
-		dialector = sqlite.Open(path)
+		dialector = sqlite.Open(getSQLitePath())
 
 	default:
 		return fmt.Errorf("unsupported database type: %s (supported: sqlite, postgres)", dbType)
