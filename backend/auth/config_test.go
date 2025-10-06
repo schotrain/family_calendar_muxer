@@ -31,6 +31,7 @@ func TestInitAuthConfig_WithValidEnv(t *testing.T) {
 	assert.Equal(t, "test-client-id", GoogleOAuthConfig.ClientID)
 	assert.Equal(t, "test-client-secret", GoogleOAuthConfig.ClientSecret)
 	assert.Equal(t, "http://localhost:8080/callback", GoogleOAuthConfig.RedirectURL)
+	assert.Contains(t, GoogleOAuthConfig.Scopes, "openid")
 	assert.Contains(t, GoogleOAuthConfig.Scopes, "https://www.googleapis.com/auth/userinfo.email")
 	assert.Contains(t, GoogleOAuthConfig.Scopes, "https://www.googleapis.com/auth/userinfo.profile")
 

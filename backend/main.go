@@ -32,20 +32,15 @@ func corsMiddleware(allowedOrigin string) func(http.Handler) http.Handler {
 	}
 }
 
-func main() {
-	// Load environment variables from .env file
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
-	}
-
+func setupRouter() (*chi.Mux, error) {
 	// Initialize authentication
 	if err := auth.InitAuthConfig(); err != nil {
-		log.Fatalf("Failed to initialize authentication: %v", err)
+		return nil, err
 	}
 
 	// Initialize database
 	if err := db.InitDB(); err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		return nil, err
 	}
 
 	r := chi.NewRouter()
@@ -75,6 +70,23 @@ func main() {
 		r.Get("/api/userinfo", rest_api_handlers.UserInfo)
 	})
 
+	return r, nil
+}
+
+func main() {
+	// Load environment variables from .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	r, err := setupRouter()
+	if err != nil {
+		log.Printf("Failed to setup router: %v", err)
+		return
+	}
+
 	log.Println("Server starting on 0.0.0.0:8080")
-	http.ListenAndServe("0.0.0.0:8080", r)
+	if err := http.ListenAndServe("0.0.0.0:8080", r); err != nil {
+		log.Printf("Server stopped: %v", err)
+	}
 }

@@ -12,6 +12,14 @@ services:
       - backend-go-cache:/go/pkg/mod
     env_file:
       - .env
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=family_calendar
+      - DB_SSLMODE=disable
     networks:
       - app-network
     depends_on:
@@ -46,9 +54,34 @@ services:
     networks:
       - app-network
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin/pgpass:/pgadmin4/pgpass:ro
+    entrypoint: >
+      /bin/sh -c "
+      cp -f /pgadmin4/pgpass /tmp/pgpassfile;
+      chmod 600 /tmp/pgpassfile;
+      /entrypoint.sh
+      "
+    networks:
+      - app-network
+    depends_on:
+      - db
+
 volumes:
   backend-go-cache:
   postgres-data:
+  pgadmin-data:
 
 networks:
   app-network:

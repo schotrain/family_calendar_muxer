@@ -16,13 +16,22 @@ import (
 
 // GoogleUserInfo represents the user information from Google
 type GoogleUserInfo struct {
-	Sub           string `json:"sub"` // Unique Google user ID
+	ID            string `json:"id"`   // Unique Google user ID (v2 API)
+	Sub           string `json:"sub"`  // Unique Google user ID (v3 API) - fallback
 	Email         string `json:"email"`
 	Name          string `json:"name"`
 	GivenName     string `json:"given_name"`
 	FamilyName    string `json:"family_name"`
 	Picture       string `json:"picture"`
 	VerifiedEmail bool   `json:"verified_email"`
+}
+
+// GetUserID returns the user ID, preferring ID field but falling back to Sub
+func (g *GoogleUserInfo) GetUserID() string {
+	if g.ID != "" {
+		return g.ID
+	}
+	return g.Sub
 }
 
 // OAuth function variables for testing.
@@ -138,8 +147,18 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the user ID (works with both v2 and v3 API)
+	userID := userInfo.GetUserID()
+
+	// Validate that we have the required user information
+	if userID == "" {
+		log.Printf("Google user info missing ID/Sub field: %+v", userInfo)
+		http.Error(w, "Invalid user info from Google", http.StatusInternalServerError)
+		return
+	}
+
 	// Find or create user in database
-	user, err := services.FindOrCreateUser("google", userInfo.Sub, userInfo.GivenName, userInfo.FamilyName, userInfo.Email)
+	user, err := services.FindOrCreateUser("google", userID, userInfo.GivenName, userInfo.FamilyName, userInfo.Email)
 	if err != nil {
 		log.Printf("Failed to find or create user: %v", err)
 		http.Error(w, "Failed to process user", http.StatusInternalServerError)

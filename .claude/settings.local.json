@@ -16,7 +16,11 @@
       "Bash(npm create:*)",
       "Bash(npx create-rsbuild:*)",
       "Bash(npx:*)",
-      "Bash(npm init:*)"
+      "Bash(npm init:*)",
+      "Bash(open coverage.html)",
+      "Bash(grep:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker exec:*)"
     ],
     "deny": [],
     "ask": []

@@ -29,10 +29,19 @@ This will start:
 - **Backend** on http://localhost:8080
 - **Frontend** on http://localhost:3000
 - **PostgreSQL** on port 5432
+- **pgAdmin** on http://localhost:5050
 
 ### 3. Access the Application
 
 Open your browser and navigate to http://localhost:3000
+
+### 4. Database Management (pgAdmin)
+
+Access the PostgreSQL web UI at http://localhost:5050:
+- **Email**: `admin@admin.com`
+- **Password**: `admin`
+
+The database connection "Family Calendar DB" is pre-configured and ready to use. Just click on it in the left sidebar to expand and browse the database.
 
 ### Stopping Services
 

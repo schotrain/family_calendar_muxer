@@ -249,6 +249,7 @@ func TestCallbackHandler_MissingCode(t *testing.T) {
 func TestGoogleUserInfo_Structure(t *testing.T) {
 	// Test that GoogleUserInfo struct has expected fields
 	userInfo := GoogleUserInfo{
+		ID:            "123456",
 		Sub:           "123456",
 		Email:         "test@example.com",
 		Name:          "Test User",
@@ -258,6 +259,7 @@ func TestGoogleUserInfo_Structure(t *testing.T) {
 		VerifiedEmail: true,
 	}
 
+	assert.Equal(t, "123456", userInfo.ID)
 	assert.Equal(t, "123456", userInfo.Sub)
 	assert.Equal(t, "test@example.com", userInfo.Email)
 	assert.Equal(t, "Test User", userInfo.Name)
@@ -265,6 +267,54 @@ func TestGoogleUserInfo_Structure(t *testing.T) {
 	assert.Equal(t, "User", userInfo.FamilyName)
 	assert.Equal(t, "https://example.com/pic.jpg", userInfo.Picture)
 	assert.True(t, userInfo.VerifiedEmail)
+}
+
+func TestGoogleUserInfo_GetUserID(t *testing.T) {
+	tests := []struct {
+		name     string
+		userInfo GoogleUserInfo
+		expected string
+	}{
+		{
+			name: "ID field present (v2 API)",
+			userInfo: GoogleUserInfo{
+				ID:  "google-id-123",
+				Sub: "",
+			},
+			expected: "google-id-123",
+		},
+		{
+			name: "Sub field present (v3 API)",
+			userInfo: GoogleUserInfo{
+				ID:  "",
+				Sub: "google-sub-456",
+			},
+			expected: "google-sub-456",
+		},
+		{
+			name: "Both fields present (ID takes precedence)",
+			userInfo: GoogleUserInfo{
+				ID:  "google-id-123",
+				Sub: "google-sub-456",
+			},
+			expected: "google-id-123",
+		},
+		{
+			name: "Neither field present",
+			userInfo: GoogleUserInfo{
+				ID:  "",
+				Sub: "",
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.userInfo.GetUserID()
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 func TestLoginHandler_StateInURL(t *testing.T) {
@@ -340,7 +390,20 @@ func TestGoogleUserInfoJSONParsing(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name: "Valid JSON",
+			name: "Valid JSON with ID (v2 API)",
+			jsonData: `{
+				"id": "123456",
+				"email": "test@example.com",
+				"name": "Test User",
+				"given_name": "Test",
+				"family_name": "User",
+				"picture": "https://example.com/pic.jpg",
+				"verified_email": true
+			}`,
+			expectError: false,
+		},
+		{
+			name: "Valid JSON with Sub (v3 API)",
 			jsonData: `{
 				"sub": "123456",
 				"email": "test@example.com",
@@ -354,7 +417,7 @@ func TestGoogleUserInfoJSONParsing(t *testing.T) {
 		},
 		{
 			name:        "Invalid JSON",
-			jsonData:    `{"sub": "123", "email": }`,
+			jsonData:    `{"id": "123", "email": }`,
 			expectError: true,
 		},
 	}
@@ -368,7 +431,6 @@ func TestGoogleUserInfoJSONParsing(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, "123456", userInfo.Sub)
 				assert.Equal(t, "test@example.com", userInfo.Email)
 				assert.Equal(t, "Test", userInfo.GivenName)
 			}
@@ -435,7 +497,7 @@ func TestCallbackHandler_SuccessfulOAuthFlow(t *testing.T) {
 	// Mock successful user info retrieval
 	getUserInfo = func(ctx context.Context, token *oauth2.Token) (*GoogleUserInfo, error) {
 		return &GoogleUserInfo{
-			Sub:        "google-user-123",
+			ID:         "google-user-123",
 			Email:      "test@example.com",
 			GivenName:  "Test",
 			FamilyName: "User",
@@ -554,7 +616,7 @@ func TestCallbackHandler_DatabaseError(t *testing.T) {
 
 	getUserInfo = func(ctx context.Context, token *oauth2.Token) (*GoogleUserInfo, error) {
 		return &GoogleUserInfo{
-			Sub:        "google-123",
+			ID:         "google-123",
 			Email:      "test@example.com",
 			GivenName:  "Test",
 			FamilyName: "User",
@@ -599,7 +661,7 @@ func TestCallbackHandler_WithCallbackRedirect(t *testing.T) {
 
 	getUserInfo = func(ctx context.Context, token *oauth2.Token) (*GoogleUserInfo, error) {
 		return &GoogleUserInfo{
-			Sub:        "google-user-123",
+			ID:         "google-user-123",
 			Email:      "test@example.com",
 			GivenName:  "Test",
 			FamilyName: "User",

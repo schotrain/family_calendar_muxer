@@ -36,6 +36,30 @@ go mod download
 
 ## Running the Server
 
+### Development with Docker Compose
+
+Run the full stack (backend, frontend, PostgreSQL, and pgAdmin):
+
+```bash
+docker-compose -f docker-compose.dev.yml up
+```
+
+Services:
+- **Backend**: http://localhost:8080
+- **Frontend**: http://localhost:3000
+- **PostgreSQL**: localhost:5432
+- **pgAdmin**: http://localhost:5050
+
+#### pgAdmin Access
+
+Access the PostgreSQL web UI at http://localhost:5050:
+- **Email**: `admin@admin.com`
+- **Password**: `admin`
+
+The database connection "Family Calendar DB" is pre-configured and ready to use. Just click on it in the left sidebar to expand and browse the database.
+
+### Local Development
+
 ```bash
 cd backend
 go run main.go

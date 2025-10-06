@@ -105,3 +105,72 @@ func TestCorsMiddleware_NonOptionsCallsNext(t *testing.T) {
 	assert.True(t, handlerCalled)
 	assert.Equal(t, http.StatusOK, rr.Code)
 }
+
+func TestSetupRouter_Success(t *testing.T) {
+	// Set required environment variables
+	t.Setenv("JWT_SECRET", "test-secret")
+	t.Setenv("GOOGLE_CLIENT_ID", "test-client-id")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
+	t.Setenv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback")
+	t.Setenv("DB_TYPE", "sqlite")
+
+	router, err := setupRouter()
+
+	assert.NoError(t, err)
+	assert.NotNil(t, router)
+
+	// Clean up database
+	// Note: In a real test you might want to close the database connection
+}
+
+func TestSetupRouter_WithCorsOrigin(t *testing.T) {
+	// Set required environment variables
+	t.Setenv("JWT_SECRET", "test-secret")
+	t.Setenv("GOOGLE_CLIENT_ID", "test-client-id")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
+	t.Setenv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback")
+	t.Setenv("DB_TYPE", "sqlite")
+	t.Setenv("CORS_ALLOWED_ORIGIN", "https://example.com")
+
+	router, err := setupRouter()
+
+	assert.NoError(t, err)
+	assert.NotNil(t, router)
+
+	// Test that CORS origin is set correctly by making a request
+	req := httptest.NewRequest("GET", "/health", nil)
+	rr := httptest.NewRecorder()
+
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, "https://example.com", rr.Header().Get("Access-Control-Allow-Origin"))
+}
+
+func TestSetupRouter_AuthInitError(t *testing.T) {
+	// Don't set JWT_SECRET to trigger auth init error
+	t.Setenv("GOOGLE_CLIENT_ID", "test-client-id")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
+	t.Setenv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback")
+
+	router, err := setupRouter()
+
+	assert.Error(t, err)
+	assert.Nil(t, router)
+	assert.Contains(t, err.Error(), "JWT_SECRET")
+}
+
+func TestSetupRouter_DBInitError(t *testing.T) {
+	// Set auth env vars but use invalid DB type
+	t.Setenv("JWT_SECRET", "test-secret")
+	t.Setenv("GOOGLE_CLIENT_ID", "test-client-id")
+	t.Setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
+	t.Setenv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback")
+	t.Setenv("DB_TYPE", "invalid-db-type")
+
+	router, err := setupRouter()
+
+	assert.Error(t, err)
+	assert.Nil(t, router)
+	assert.Contains(t, err.Error(), "unsupported database type")
+}
+
