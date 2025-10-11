@@ -26,7 +26,9 @@
       "Bash(open handlers_coverage.html)",
       "Bash(npm run test:coverage:*)",
       "Bash(npm test:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(docker compose:*)",
+      "Bash(time docker compose:*)"
     ],
     "deny": [],
     "ask": []

@@ -11,12 +11,27 @@ A family calendar application with Google OAuth authentication.
 
 ### 1. Configure Environment Variables
 
-Update the `.env` file in the project root with your Google OAuth credentials:
+Create environment files for both backend and frontend:
 
+**Backend Configuration** (`backend/.env`):
 ```bash
+# Copy the example file
+cp backend/.env.example backend/.env
+
+# Edit backend/.env with your Google OAuth credentials:
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 JWT_SECRET=your-secret-key-change-this-in-production
+```
+
+**Frontend Configuration** (`frontend/.env`):
+```bash
+# Copy the example file
+cp frontend/.env.example frontend/.env
+
+# Default values should work for local development:
+PUBLIC_AUTH_LOGIN_URL=http://localhost:8080/auth/google
+PUBLIC_API_BASE_URL=http://localhost:8080
 ```
 
 ### 2. Start the Application

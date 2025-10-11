@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -11,15 +9,7 @@ services:
       - ./backend:/app
       - backend-go-cache:/go/pkg/mod
     env_file:
-      - .env
-    environment:
-      - DB_TYPE=postgres
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=family_calendar
-      - DB_SSLMODE=disable
+      - ./backend/.env
     networks:
       - app-network
     depends_on:
@@ -35,7 +25,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     env_file:
-      - .env
+      - ./frontend/.env
     networks:
       - app-network
     depends_on:
