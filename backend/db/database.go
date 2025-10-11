@@ -15,7 +15,7 @@ var DB *gorm.DB
 
 // migrateFunc allows mocking AutoMigrate in tests
 var migrateFunc = func(db *gorm.DB) error {
-	return db.AutoMigrate(&models.User{})
+	return db.AutoMigrate(&models.User{}, &models.CalendarMux{})
 }
 
 // getSQLitePath returns the appropriate SQLite database path

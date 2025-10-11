@@ -20,7 +20,10 @@
       "Bash(open coverage.html)",
       "Bash(grep:*)",
       "Bash(docker-compose:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(open services_coverage.html)",
+      "Bash(go build:*)",
+      "Bash(open handlers_coverage.html)"
     ],
     "deny": [],
     "ask": []

@@ -68,6 +68,9 @@ func setupRouter() (*chi.Mux, error) {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Get("/api/userinfo", rest_api_handlers.UserInfo)
+		r.Post("/api/calendar-mux", rest_api_handlers.CreateCalendarMux)
+		r.Get("/api/calendar-mux", rest_api_handlers.ListCalendarMuxes)
+		r.Delete("/api/calendar-mux/{id}", rest_api_handlers.DeleteCalendarMux)
 	})
 
 	return r, nil

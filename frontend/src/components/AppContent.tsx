@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layout } from 'antd';
+import CalendarMuxList from './CalendarMuxList';
 
 const { Content } = Layout;
 
@@ -18,7 +19,7 @@ const AppContent: React.FC = () => {
           minHeight: '280px',
         }}
       >
-        Content goes here
+        <CalendarMuxList />
       </div>
     </Content>
   );

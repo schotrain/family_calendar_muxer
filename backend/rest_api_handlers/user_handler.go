@@ -7,15 +7,7 @@ import (
 	"family-calendar-backend/db"
 	"family-calendar-backend/db/models"
 	"family-calendar-backend/rest_api_handlers/utils"
-
-	"github.com/go-playground/validator/v10"
 )
-
-var validate *validator.Validate
-
-func init() {
-	validate = validator.New()
-}
 
 func UserInfo(w http.ResponseWriter, r *http.Request) {
 	// Get authenticated user ID from context

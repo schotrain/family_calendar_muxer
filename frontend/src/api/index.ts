@@ -1,19 +1,10 @@
-import { apiClient } from '../utils/apiClient';
-import type { User, HealthCheckResponse } from './types';
-
-// User API
-export const userApi = {
-  getUserInfo: async (): Promise<User> => {
-    return apiClient.get<User>('/api/userinfo');
-  },
-};
-
-// Health API
-export const healthApi = {
-  check: async (): Promise<HealthCheckResponse> => {
-    return apiClient.get<HealthCheckResponse>('/health');
-  },
-};
-
-// Re-export types for convenience
-export type { User, HealthCheckResponse };
+// Re-export all APIs and types
+export { userApi, type User } from './userApi';
+export { healthApi, type HealthCheckResponse } from './healthApi';
+export {
+  calendarMuxApi,
+  type CalendarMux,
+  type CalendarMuxListResponse,
+  type CreateCalendarMuxRequest,
+  type DeleteCalendarMuxResponse
+} from './calendarMuxApi';
