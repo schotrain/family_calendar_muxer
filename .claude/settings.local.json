@@ -23,7 +23,10 @@
       "Bash(docker exec:*)",
       "Bash(open services_coverage.html)",
       "Bash(go build:*)",
-      "Bash(open handlers_coverage.html)"
+      "Bash(open handlers_coverage.html)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(npm test:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

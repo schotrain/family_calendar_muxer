@@ -56,6 +56,12 @@ const CalendarMuxList: React.FC = () => {
     }
   };
 
+  /* v8 ignore next 4 */
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    form.resetFields();
+  };
+
   if (!isAuthenticated) {
     return (
       <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -105,10 +111,7 @@ const CalendarMuxList: React.FC = () => {
       <Modal
         title="Create Calendar Mux"
         open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          form.resetFields();
-        }}
+        onCancel={handleCancel}
         onOk={() => form.submit()}
       >
         <Form

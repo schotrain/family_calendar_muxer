@@ -19,6 +19,9 @@
 # Output of the go coverage tool
 *.out
 
+# Frontend coverage
+frontend/coverage/
+
 # Dependency directories
 vendor/
 
