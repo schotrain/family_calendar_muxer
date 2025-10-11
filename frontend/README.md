@@ -12,15 +12,14 @@ npm install
 
 2. Configure environment variables:
 
-Copy the template file and update with your settings:
+Copy the example file and configure appropriately:
 
 ```bash
-cp .env.template .env
-```
+cp .env.example .env
 
-Edit `.env` and configure:
-- `PUBLIC_AUTH_LOGIN_URL` - The authentication login endpoint (default: `http://localhost:8080/auth/google`)
-- `PUBLIC_API_BASE_URL` - The API base URL (default: `http://localhost:8080`)
+# Edit .env with your configuration
+# See .env.example for required variables
+```
 
 ## Running the App
 

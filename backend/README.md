@@ -1,127 +1,88 @@
-# Family Calendar Muxer
+# Family Calendar Muxer - Backend
 
 A backend service for managing family calendars with Google OAuth authentication and REST API endpoints.
 
-## Setup
-
-### Prerequisites
+## Prerequisites
 
 - Go 1.25.1 or later
+- PostgreSQL or SQLite (for database)
 - Google OAuth credentials (Client ID and Secret)
 
-### Environment Configuration
+## Setup
 
-Copy the example environment file:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Edit `backend/.env` with your Google OAuth credentials:
-
-```env
-GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_REDIRECT_URL=http://localhost:8080/auth/google/callback
-JWT_SECRET=your-secret-key-change-this-in-production
-USE_SECURE_CONNECTIONS=false  # Set to true in production with HTTPS
-```
-
-### Install Dependencies
+### 1. Install Dependencies
 
 ```bash
-cd backend
 go mod download
+```
+
+### 2. Configure Environment
+
+Copy the example environment file and configure appropriately:
+
+```bash
+cp .env.example .env
+
+# Edit .env with your configuration
+# See .env.example for required variables
 ```
 
 ## Running the Server
 
-### Development with Docker Compose
-
-Run the full stack (backend, frontend, PostgreSQL, and pgAdmin):
+Start the backend server:
 
 ```bash
-docker-compose -f docker-compose.dev.yml up
-```
-
-Services:
-- **Backend**: http://localhost:8080
-- **Frontend**: http://localhost:3000
-- **PostgreSQL**: localhost:5432
-- **pgAdmin**: http://localhost:5050
-
-#### pgAdmin Access
-
-Access the PostgreSQL web UI at http://localhost:5050:
-- **Email**: `admin@admin.com`
-- **Password**: `admin`
-
-The database connection "Family Calendar DB" is pre-configured and ready to use. Just click on it in the left sidebar to expand and browse the database.
-
-### Local Development
-
-```bash
-cd backend
 go run main.go
 ```
 
 The server will start on `http://localhost:8080`
 
-## Usage
+## API Endpoints
 
-### 1. Log in with Google OAuth
+### Authentication
+- `GET /auth/google` - Initiate Google OAuth flow
+- `GET /auth/google/callback` - OAuth callback handler
 
-Open your browser and navigate to:
+### Public Endpoints
+- `GET /health` - Health check (no authentication required)
 
-```
-http://localhost:8080/auth/google
-```
+### Protected Endpoints
+Require `Authorization: Bearer <token>` header:
+- `GET /api/userinfo` - Get current user information
+- `GET /api/calendar-mux` - List user's calendar muxes
+- `POST /api/calendar-mux` - Create a new calendar mux
+- `DELETE /api/calendar-mux/:id` - Delete a calendar mux
 
-This will:
-1. Redirect you to Google's login page
-2. After authentication, redirect back to the callback URL
-3. Display your JWT token on a success page
+## Building
 
-Copy the JWT token from the page.
-
-### 2. Make API calls with the token
-
-Use the token in the `Authorization` header for authenticated API calls:
+Build the application:
 
 ```bash
-# Get user info
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:8080/api/userinfo
+go build -o server .
 ```
 
-Example response:
-```json
-{
-  "id": 1,
-  "given_name": "John",
-  "family_name": "Doe",
-  "email": "john@example.com"
-}
-```
+Run the built binary:
 
-### Public endpoints
-
-Health check (no authentication required):
 ```bash
-curl http://localhost:8080/health
+./server
 ```
 
 ## Testing
 
 Run all tests:
 ```bash
-cd backend
 go test ./...
 ```
 
 Run tests with coverage:
 ```bash
 go test ./... -cover
+```
+
+Run tests for a specific package:
+```bash
+go test ./db/services -v
+go test ./rest_api_handlers -v
 ```
 
 Generate HTML coverage report:
