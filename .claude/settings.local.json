@@ -28,7 +28,8 @@
       "Bash(npm test:*)",
       "Bash(git checkout:*)",
       "Bash(docker compose:*)",
-      "Bash(time docker compose:*)"
+      "Bash(time docker compose:*)",
+      "Bash(open auth_coverage.html)"
     ],
     "deny": [],
     "ask": []

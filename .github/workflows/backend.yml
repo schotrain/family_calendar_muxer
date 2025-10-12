@@ -53,11 +53,11 @@ jobs:
         run: |
           coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           echo "Total coverage: ${coverage}%"
-          if (( $(echo "$coverage < 90" | bc -l) )); then
-            echo "❌ Coverage ${coverage}% is below 90% threshold"
+          if (( $(echo "$coverage < 95" | bc -l) )); then
+            echo "❌ Coverage ${coverage}% is below 95% threshold"
             exit 1
           fi
-          echo "✅ Coverage ${coverage}% meets 90% threshold"
+          echo "✅ Coverage ${coverage}% meets 95% threshold"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

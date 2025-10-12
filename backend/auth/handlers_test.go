@@ -716,3 +716,43 @@ func TestCallbackHandler_WithCallbackRedirect(t *testing.T) {
 	assert.NotNil(t, callbackCookie)
 	assert.Equal(t, -1, callbackCookie.MaxAge)
 }
+
+func TestCallbackHandler_MissingUserID(t *testing.T) {
+	setupAuthTests()
+
+	// Save original functions
+	originalExchange := exchangeToken
+	originalGetUserInfo := getUserInfo
+	defer func() {
+		exchangeToken = originalExchange
+		getUserInfo = originalGetUserInfo
+	}()
+
+	// Mock OAuth flow with empty user ID
+	exchangeToken = func(ctx context.Context, code string) (*oauth2.Token, error) {
+		return &oauth2.Token{AccessToken: "mock-access-token"}, nil
+	}
+
+	getUserInfo = func(ctx context.Context, token *oauth2.Token) (*GoogleUserInfo, error) {
+		return &GoogleUserInfo{
+			ID:         "", // Empty ID
+			Sub:        "", // Empty Sub
+			Email:      "test@example.com",
+			GivenName:  "Test",
+			FamilyName: "User",
+		}, nil
+	}
+
+	req := httptest.NewRequest("GET", "/auth/google/callback?state=test-state&code=test-code", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "oauth_state",
+		Value: "test-state",
+	})
+	rr := httptest.NewRecorder()
+
+	CallbackHandler(rr, req)
+
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	assert.Contains(t, rr.Body.String(), "Invalid user info from Google")
+}
+
