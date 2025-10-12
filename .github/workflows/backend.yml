@@ -17,21 +17,6 @@ jobs:
     name: Run Backend Tests
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: family_calendar_test
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,13 +34,7 @@ jobs:
       - name: Run tests with coverage
         working-directory: ./backend
         env:
-          DB_TYPE: postgres
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USER: postgres
-          DB_PASSWORD: postgres
-          DB_NAME: family_calendar_test
-          DB_SSLMODE: disable
+          DB_TYPE: sqlite
           JWT_SECRET: test-secret-key
           USE_SECURE_CONNECTIONS: false
           GOOGLE_CLIENT_ID: test-client-id
