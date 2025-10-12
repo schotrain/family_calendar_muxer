@@ -144,7 +144,9 @@ func TestSetupRouter_WithCorsOrigin(t *testing.T) {
 }
 
 func TestSetupRouter_AuthInitError(t *testing.T) {
-	// Don't set JWT_SECRET to trigger auth init error
+
+	// Explicitly set it to empty to override any existing value from environment
+	t.Setenv("JWT_SECRET", "")
 	t.Setenv("GOOGLE_CLIENT_ID", "test-client-id")
 	t.Setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
 	t.Setenv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback")
@@ -170,4 +172,3 @@ func TestSetupRouter_DBInitError(t *testing.T) {
 	assert.Nil(t, router)
 	assert.Contains(t, err.Error(), "unsupported database type")
 }
-
