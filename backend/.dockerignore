@@ -1,7 +1,17 @@
+# Exclude Fly.io configuration (not needed in container)
+fly.toml
+
+# Exclude development files
+Dockerfile.dev
+README.md
+*.http
 tmp/
-*.db
-.env
-.air.toml
-testdata/
-*_test.go
-*.log
+*.out
+
+# Exclude coverage reports
+*_coverage.html
+*_coverage.out
+coverage.out
+
+# Exclude test files from production build (optional - comment out if you want tests in image)
+# *_test.go

@@ -8,7 +8,10 @@ class ApiClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = import.meta.env.PUBLIC_API_BASE_URL || 'http://localhost:8080';
+    // Use runtime config if available, fallback to build-time env, then default
+    this.baseURL = (window as any).ENV?.API_BASE_URL ||
+                   import.meta.env.PUBLIC_API_BASE_URL ||
+                   'http://localhost:8080';
   }
 
   private async request<T>(

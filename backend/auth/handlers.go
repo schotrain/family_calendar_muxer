@@ -82,7 +82,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate random state
 	state := generateStateToken()
 
-	// Store state in cookie
+	// Store state in cookie (only used between backend and itself via browser redirects)
+	// SameSite=Lax works for both dev and production since cookies stay within backend domain
 	http.SetCookie(w, &http.Cookie{
 		Name:     "oauth_state",
 		Value:    state,

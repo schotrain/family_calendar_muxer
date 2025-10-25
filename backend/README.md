@@ -55,6 +55,8 @@ Require `Authorization: Bearer <token>` header:
 
 ## Building
 
+### Local Build
+
 Build the application:
 
 ```bash
@@ -66,6 +68,29 @@ Run the built binary:
 ```bash
 ./server
 ```
+
+### Docker Production Build
+
+Build the production Docker image:
+
+```bash
+docker build -f Dockerfile.prod -t family-calendar-muxer-backend:prod .
+```
+
+Run the production container:
+
+```bash
+docker run -p 8080:8080 \
+  -e DATABASE_URL="postgres://user:password@host:5432/dbname" \
+  -e GOOGLE_CLIENT_ID="your-google-client-id" \
+  -e GOOGLE_CLIENT_SECRET="your-google-client-secret" \
+  -e GOOGLE_REDIRECT_URL="http://localhost:8080/auth/google/callback" \
+  -e JWT_SECRET="your-jwt-secret" \
+  -e CORS_ALLOWED_ORIGIN="http://localhost:3000" \
+  family-calendar-backend:prod
+```
+
+**Note:** The production image uses PostgreSQL only (SQLite is not included). The binary is statically compiled for optimal performance and security.
 
 ## Testing
 

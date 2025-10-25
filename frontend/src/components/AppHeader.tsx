@@ -9,7 +9,10 @@ const AppHeader: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
 
   const handleSignIn = () => {
-    const authUrl = import.meta.env.PUBLIC_AUTH_LOGIN_URL || 'http://localhost:8080/auth/google';
+    // Use runtime config if available, fallback to build-time env, then default
+    const authUrl = (window as any).ENV?.AUTH_LOGIN_URL ||
+                    import.meta.env.PUBLIC_AUTH_LOGIN_URL ||
+                    'http://localhost:8080/auth/google';
     const callbackUrl = `${window.location.origin}/auth/callback`;
     window.location.href = `${authUrl}?callback=${encodeURIComponent(callbackUrl)}`;
   };

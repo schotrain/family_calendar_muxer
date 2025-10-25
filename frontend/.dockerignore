@@ -1,7 +1,29 @@
+# Dependencies (reinstalled during build)
 node_modules/
+
+# Build output (rebuilt during build)
 dist/
+
+# Environment files (runtime injection used instead)
 .env
 .env.local
+
+# Fly.io configuration (not needed in container)
+fly.toml
+
+# Development and documentation files
+Dockerfile.dev
+README.md
+
+# Test and coverage files
+coverage/
+*.coverage.html
+
+# Log files
 npm-debug.log
 yarn-debug.log
 yarn-error.log
+
+# Git
+.git/
+.gitignore

@@ -14,7 +14,6 @@ const AuthCallback: React.FC = () => {
       authService.setToken(token);
       navigate('/', { replace: true });
     } else {
-      // No token found, redirect to home
       navigate('/', { replace: true });
     }
   }, [searchParams, navigate]);
